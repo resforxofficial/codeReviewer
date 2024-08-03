@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-4.0.0-beta.min.js"></script>
+    <title>Code Reviewer</title>
+</head>
+
+<body>
+    <div>
+        <h1>폼 테스트</h1>
+        <div id="resultc"></div>
+
+        <form action="/encv" method="post">
+            <input type="text" name="ques" id="ques" />
+            <button id="getres">전송</button>
+        </form>
+    </div>
+
+    <script>
+        $(document).ready(() => {
+            $("#getres").on("click", (e) => {
+                e.preventDefault();
+                const ques = $("#ques").val();
+
+                $.ajax({
+                    type: "POST",
+                    url: "/encv",
+                    data: JSON.stringify({ ques }), // Send the correct object
+                    contentType: "application/json", // Specify the content type
+                    success: (d) => {
+                        $("#resultc").html(`<h3>${d.ques}</h3>`); // Display the input value
+                    },
+                    error: (er) => {
+                        console.error(er);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
