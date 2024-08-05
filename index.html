@@ -2,14 +2,96 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://code.jquery.com/jquery-4.0.0-beta.min.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Code Reviewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-4.0.0-beta.min.js"></script>
+    <style>
+        body {
+            font-family: "Roboto", sans-serif;
+        }
+    </style>
 </head>
 
-<body>
-    
+<body class="bg-gray-100 text-gray-900">
+    <div class="flex flex-col h-screen">
+        <!-- Navigation Bar -->
+        <nav class="bg-gray-300 shadow p-4 flex justify-between items-center">
+            <div class="text-xl font-bold">codeReviewer</div>
+            <div class="space-x-4">
+                <a href="#" class="text-gray-700 hover:text-gray-900">code review</a>
+                <a href="#" class="text-gray-700 hover:text-gray-900">find error</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Sidebar -->
+            <div class="flex flex-1 overflow-hidden">
+                <!-- Sidebar -->
+                <div class="bg-white w-64 border-r p-4 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <button id="deleteChat" class="text-red-500 hover:text-red-700 cursor-pointer" disabled>&times;</button>
+                        <button id="addChat" class="text-green-500 hover:text-green-700 cursor-pointer">+</button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto" id="chatList">
+                        <div class="chat-item mb-2 p-2 bg-gray-200 rounded selected" onclick="selectChat(this)">Chat 1
+                        </div>
+                    </div>  
+                </div>
+            </div>
+
+            <script>
+                let chatCounter = 1; // 초기 채팅 수
+
+                // 채팅 항목 선택 시 호출되는 함수
+                function selectChat(element) {
+                    const selected = document.querySelector('.selected');
+                    if (selected) {
+                        selected.classList.remove('selected');
+                    }
+                    element.classList.add('selected');
+                    document.getElementById('deleteChat').disabled = false; // 삭제 버튼 활성화
+                }
+
+                // 채팅 추가 함수
+                document.getElementById('addChat').addEventListener('click', function () {
+                    if (chatCounter >= 10) {
+                        alert("채팅은 최대 10개까지 추가할 수 있습니다.");
+                        return;
+                    }
+
+                    chatCounter++;
+                    const newChat = document.createElement('div');
+                    newChat.className = 'chat-item mb-2 p-2 bg-gray-200 rounded';
+                    newChat.innerText = `Chat ${chatCounter}`;
+                    newChat.onclick = function () { selectChat(this); };
+
+                    document.getElementById('chatList').appendChild(newChat);
+                });
+
+                // 채팅 삭제 함수
+                document.getElementById('deleteChat').addEventListener('click', function () {
+                    const selectedChat = document.querySelector('.selected');
+                    if (!selectedChat) {
+                        alert("삭제할 채팅을 선택해 주세요.");
+                        return;
+                    }
+                    selectedChat.remove();
+                    document.getElementById('deleteChat').disabled = true; // 삭제 후 버튼 비활성화
+                    chatCounter--;
+                });
+            </script>
+        </div>
+    </div>
+    <style>
+        .selected {
+            border: 2px solid blue;
+            /* 선택된 채팅 항목 스타일 */
+        }
+    </style>
 </body>
 
 </html>
