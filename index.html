@@ -33,56 +33,91 @@
                 <!-- Sidebar -->
                 <div class="bg-white w-64 border-r p-4 flex flex-col">
                     <div class="flex justify-between items-center mb-4">
-                        <button id="deleteChat" class="text-red-500 hover:text-red-700 cursor-pointer" disabled>&times;</button>
+                        <button id="deleteChat" class="text-red-500 hover:text-red-700 cursor-pointer"
+                            disabled>&times;</button>
                         <button id="addChat" class="text-green-500 hover:text-green-700 cursor-pointer">+</button>
                     </div>
-                    <div class="flex-1 overflow-y-auto" id="chatList">
-                        <div class="chat-item mb-2 p-2 bg-gray-200 rounded selected" onclick="selectChat(this)">Chat 1
-                        </div>
-                    </div>  
+                    <div class="flex-1 overflow-y-auto" id="chatList"></div>
                 </div>
             </div>
 
             <script>
-                let chatCounter = 1; // 초기 채팅 수
+                let selectedChatId = null;
 
-                // 채팅 항목 선택 시 호출되는 함수
-                function selectChat(element) {
-                    const selected = document.querySelector('.selected');
-                    if (selected) {
-                        selected.classList.remove('selected');
+                $(document).ready(function () {
+                    // 채팅 목록 불러오기
+                    loadChats();
+
+                    // 채팅 추가 버튼 클릭
+                    $('#addChat').click(async function () {
+                        try {
+                            const response = await fetch('/api/chats', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+
+                            if (response.ok) {
+                                loadChats();
+                            } else {
+                                const result = await response.json();
+                                alert(result.error);
+                            }
+                        } catch (error) {
+                            console.error('Error:', error);
+                        }
+                    });
+
+                    // 채팅 삭제 버튼 클릭
+                    $('#deleteChat').click(async function () {
+                        if (selectedChatId === null) {
+                            alert("삭제할 채팅을 선택해 주세요.");
+                            return;
+                        }
+
+                        try {
+                            const response = await fetch(`/api/chats/${selectedChatId}`, {
+                                method: 'DELETE'
+                            });
+
+                            if (response.ok) {
+                                loadChats();
+                                selectedChatId = null;
+                                $('#deleteChat').prop('disabled', true);
+                            } else {
+                                const result = await response.json();
+                                alert(result.error);
+                            }
+                        } catch (error) {
+                            console.error('Error:', error);
+                        }
+                    });
+                });
+
+                // 채팅 목록 불러오기 함수
+                async function loadChats() {
+                    try {
+                        const response = await fetch('/api/chats');
+                        const chats = await response.json();
+
+                        const chatList = $('#chatList');
+                        chatList.empty();
+
+                        chats.forEach(chat => {
+                            const chatItem = $(`<div class="chat-item mb-2 p-2 bg-gray-200 rounded" data-id="${chat.id}">${chat.name}</div>`);
+                            chatItem.click(function () {
+                                $('.chat-item').removeClass('selected');
+                                $(this).addClass('selected');
+                                selectedChatId = chat.id;
+                                $('#deleteChat').prop('disabled', false);
+                            });
+                            chatList.append(chatItem);
+                        });
+                    } catch (error) {
+                        console.error('Error:', error);
                     }
-                    element.classList.add('selected');
-                    document.getElementById('deleteChat').disabled = false; // 삭제 버튼 활성화
                 }
-
-                // 채팅 추가 함수
-                document.getElementById('addChat').addEventListener('click', function () {
-                    if (chatCounter >= 10) {
-                        alert("채팅은 최대 10개까지 추가할 수 있습니다.");
-                        return;
-                    }
-
-                    chatCounter++;
-                    const newChat = document.createElement('div');
-                    newChat.className = 'chat-item mb-2 p-2 bg-gray-200 rounded';
-                    newChat.innerText = `Chat ${chatCounter}`;
-                    newChat.onclick = function () { selectChat(this); };
-
-                    document.getElementById('chatList').appendChild(newChat);
-                });
-
-                // 채팅 삭제 함수
-                document.getElementById('deleteChat').addEventListener('click', function () {
-                    const selectedChat = document.querySelector('.selected');
-                    if (!selectedChat) {
-                        alert("삭제할 채팅을 선택해 주세요.");
-                        return;
-                    }
-                    selectedChat.remove();
-                    document.getElementById('deleteChat').disabled = true; // 삭제 후 버튼 비활성화
-                    chatCounter--;
-                });
             </script>
         </div>
     </div>

@@ -12,8 +12,21 @@ import {
   HarmBlockThreshold,
 } from "@google/generative-ai";
 import multer from "multer";
-import { Sequelize, DataTypes } from "sequelize"; // Sequelize 추가
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
+
+import { Sequelize, DataTypes } from "sequelize"; // Sequelize 추가
+
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: "mysql",
+});
+
+// Chat 모델 정의
+const Chat = sequelize.define("Chat", {
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+});
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const model = genAI.getGenerativeModel({
@@ -57,7 +70,39 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, ".", "index.html"));
 });
 
-app.listen(port, () => {
+app.get("/api/chats", async (req, res) => {
+  try {
+    const chats = await Chat.findAll();
+    res.json(chats);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to load chats" });
+  }
+});
+
+app.delete("/api/chats/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const chat = await Chat.findByPk(id);
+    if (!chat) {
+      return res.status(404).json({ error: "Chat not found" });
+    }
+    await chat.destroy();
+    res.json({ message: "Chat deleted" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to delete chat" });
+  }
+});
+
+app.listen(port, async () => {
+  try {
+    await sequelize.authenticate();
+    await sequelize.sync();
+    console.log("Connection has been established successfully.");
+  } catch (error) {
+    console.error("Unable to connect to the database:", error);
+  }
   console.log(`port ${port} on successfully`);
 });
 
