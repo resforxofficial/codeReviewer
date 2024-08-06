@@ -125,7 +125,7 @@ app.post("/upload_text", async (req, res) => {
   const code = req.body.code;
   console.log(code);
   try {
-    const prompt = `You are an expert code reviewer. Explain the following code in detail. Make sure to explain each line and its purpose.
+    const prompt = `You are an expert code reviewer. Explain the following code in detail. Make sure to explain current language each line and its purpose. But in Korean. If the code is undefined, please dont answer.
           Code:
           \`\`\`
           ${code}
@@ -135,7 +135,12 @@ app.post("/upload_text", async (req, res) => {
 
     const result = model.generateContent(prompt);
     const response = (await result).response;
-    console.log(response.text());
+
+    const jpad = JSON.parse(response.text());
+    const ans = jpad[Object.keys(jpad)[0]];
+    console.log(ans);
+
+    res.json({ ans });
 
   } catch (e) {
     console.error(e);
