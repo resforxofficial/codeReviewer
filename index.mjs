@@ -2,25 +2,23 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-
 import dotenv from "dotenv";
 dotenv.config();
-
 import {
   GoogleGenerativeAI,
   HarmCategory,
   HarmBlockThreshold,
 } from "@google/generative-ai";
 import multer from "multer";
-const genAI = new GoogleGenerativeAI(process.env.API_KEY);
+import fs from "fs";
+import { Sequelize, DataTypes } from "sequelize";
 
-import { Sequelize, DataTypes } from "sequelize"; // Sequelize 추가
+const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "mysql",
 });
 
-// Chat 모델 정의
 const Chat = sequelize.define("Chat", {
   name: {
     type: DataTypes.STRING,
@@ -64,6 +62,7 @@ app.use(express.json());
 
 const upload = multer({ dest: "uploads/" });
 const uploadMiddleware = upload.single("mcxfile");
+
 app.use(uploadMiddleware);
 
 app.get("/", (req, res) => {
@@ -77,6 +76,20 @@ app.get("/api/chats", async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Failed to load chats" });
+  }
+});
+
+app.post("/api/chats", async (req, res) => {
+  try {
+    const count = await Chat.count();
+    if (count >= 10) {
+      return res.status(400).json({ error: "Cannot add more than 10 chats." });
+    }
+    const newChat = await Chat.create({ name: `Chat ${count + 1}` });
+    res.json(newChat);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Failed to add chat" });
   }
 });
 
@@ -107,24 +120,32 @@ app.listen(port, async () => {
 });
 
 app.post("/upload_text", async (req, res) => {
-  /** @type {string} */
   const code = req.body.code;
   const fileit = req.file;
 
   try {
-    const prompt = `When answering, don't answer in a format, just answer in sentences in plain text. But please give a little more explanation.
-    You are a developer who is very good at coding.
-    You are very good at code reviews, so you can review and analyze all the code you are asked about and explain the content of the code well.
-    `;
+    let codeContent = code;
 
-    const result = model.generateContent([prompt, code]);
-    const response = (await result).response;
-    const ans = JSON.parse(response.text());
+    if (fileit) {
+      codeContent = fs.readFileSync(fileit.path, "utf-8");
+    }
 
-    const answer = ans[Object.keys(ans)[0]];
-    res.json({ answer });
+    const prompt = `You are an expert code reviewer. Explain the following Python code in detail. Make sure to explain each line and its purpose.
+
+Code:
+\`\`\`
+${codeContent}
+\`\`\`
+
+Explanation:
+`;
+
+    const result = await model.generateContent([prompt, codeContent]);
+    const response = result.response;
+    const answer = JSON.parse(response.text());
+    res.json({ answer: answer.text });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: "failed" });
+    res.status(500).json({ error: "Failed to analyze the code" });
   }
 });
