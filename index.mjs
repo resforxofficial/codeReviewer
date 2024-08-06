@@ -54,16 +54,16 @@ const model = genAI.getGenerativeModel({
   generationConfig: { responseMimeType: "application/json" },
 });
 
-const port = 3000;
+const port = 3300;
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(express.json());
 
-const upload = multer({ dest: "uploads/" });
-const uploadMiddleware = upload.single("mcxfile");
+// const upload = multer({ dest: "uploads/" });
+// const uploadMiddleware = upload.single("mcxfile");
 
-app.use(uploadMiddleware);
+// app.use(uploadMiddleware);
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, ".", "index.html"));
@@ -120,30 +120,23 @@ app.listen(port, async () => {
 });
 
 app.post("/upload_text", async (req, res) => {
+  // console.log(req);
+  /** @type {string} */
   const code = req.body.code;
-  const fileit = req.file;
-
+  console.log(code);
   try {
-    let codeContent = code;
+    const prompt = `You are an expert code reviewer. Explain the following code in detail. Make sure to explain each line and its purpose.
+          Code:
+          \`\`\`
+          ${code}
+          \`\`\`
+          Explanation:
+        `;
 
-    if (fileit) {
-      codeContent = fs.readFileSync(fileit.path, "utf-8");
-    }
+    const result = model.generateContent(prompt);
+    const response = (await result).response;
+    console.log(response.text());
 
-    const prompt = `You are an expert code reviewer. Explain the following Python code in detail. Make sure to explain each line and its purpose.
-
-Code:
-\`\`\`
-${codeContent}
-\`\`\`
-
-Explanation:
-`;
-
-    const result = await model.generateContent([prompt, codeContent]);
-    const response = result.response;
-    const answer = JSON.parse(response.text());
-    res.json({ answer: answer.text });
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: "Failed to analyze the code" });

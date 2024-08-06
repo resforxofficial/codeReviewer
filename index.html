@@ -51,11 +51,10 @@
 
                 <!-- Main Content Area -->
                 <div class="flex-1 p-4">
-                    <form id="questionForm" enctype="multipart/form-data">
-                        <textarea id="questionText" rows="4" cols="50"
-                            class="w-full p-2 mb-4 border rounded"></textarea><br>
-                        <input type="file" id="questionFile" name="mcxfile" class="mb-4"><br>
-                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Submit</button>
+                    <form id="questionForm" method="post" action="/upload_text">
+                        <input id="questionText" class="w-full p-2 mb-4 border rounded" name="code"></input><br>
+                        <!-- <input type="file" id="questionFile" name="mcxfile" class="mb-4"><br> -->
+                        <input type="submit" class="bg-blue-500 text-white px-4 py-2 rounded" />
                     </form>
                     <div id="answerResult" class="mt-4 p-4 bg-white rounded shadow"></div>
                 </div>
@@ -65,11 +64,12 @@
 
     <script>
         let selectedChatId = null;
+        /** @type {string} */
+        const quval = $("#questionText").val();
 
-        $(document).ready(function () {
+        $(document).ready(() => {
             // 채팅 목록 불러오기
             loadChats();
-
             // 채팅 추가 버튼 클릭
             $('#addChat').click(async function () {
                 try {
@@ -116,26 +116,16 @@
                 }
             });
 
-            // 파일 업로드 및 코드 분석
-            $('#uploadForm').submit(async function (event) {
-                event.preventDefault();
-
-                const formData = new FormData(this);
-                try {
-                    const response = await fetch('/upload_text', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        $('#result').text(result.answer);
-                    } else {
-                        const result = await response.json();
-                        alert(result.error);
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
+            $.ajax({
+                type: "POST",
+                url: "/upload_text",
+                data: JSON.stringify({ quval }),
+                contentType: "application/json",
+                success: (d) => {
+                    $("#answerResult").text(d);
+                },
+                error: (e) => {
+                    console.error(e);
                 }
             });
         });
